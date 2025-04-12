@@ -1,0 +1,1 @@
+{"root":["../src/config.ts","../src/index.ts","../src/routes/commentroutes.ts","../src/routes/assignmentsroutes.ts","../src/routes/catagoriesroutes.ts","../src/routes/eventroutes.ts","../src/routes/index.ts","../src/routes/itemsroutes.ts","../src/routes/notificationroutes.ts","../src/types/index.ts"],"errors":true,"version":"5.8.2"}
