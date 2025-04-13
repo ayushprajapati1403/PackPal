@@ -821,17 +821,30 @@ export default function AdminDashboard() {
 								<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
 									<h4 className="font-medium text-gray-900 dark:text-white mb-2">Categories</h4>
 									<div className="space-y-2">
-										{selectedEvent.categories?.map(category => (
-											<div key={category.id} className="flex justify-between items-center">
-												<span className="text-gray-600 dark:text-gray-300">{category.name}</span>
-												<span className={`px-2 py-1 rounded-full text-xs ${category.assignmentId
-													? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-													: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-													}`}>
-													{category.assignmentId ? 'Assigned' : 'Unassigned'}
-												</span>
-											</div>
-										))}
+										{selectedEvent.categories?.map(category => {
+											// Find the assignment that contains this category
+											const assignment = selectedEvent.assignments?.find(a =>
+												a.categories?.some(c => c.id === category.id)
+											);
+											const assignedUsername = assignment?.user?.username || 'Unassigned';
+
+											return (
+												<div key={category.id} className="flex justify-between items-center">
+													<span className="text-gray-600 dark:text-gray-300">{category.name}</span>
+													<div className="flex items-center gap-2">
+														<span className="text-sm text-gray-500 dark:text-gray-400">
+															{assignedUsername}
+														</span>
+														{/* <span className={`px-2 py-1 rounded-full text-xs ${category.assignmentId
+															? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+															: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+															}`}>
+															{category.assignmentId ? 'Assigned' : 'Unassigned'}
+														</span> */}
+													</div>
+												</div>
+											);
+										})}
 									</div>
 								</div>
 							</div>

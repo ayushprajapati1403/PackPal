@@ -103,7 +103,7 @@ const Navbar = () => {
                 : 'text-foreground/80 hover:text-primary'
                 }`}
             >
-              AI Trip Assistant
+              AI Assistant
             </ScrollToTopLink>
           </div>
 

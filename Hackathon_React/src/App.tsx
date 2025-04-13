@@ -16,6 +16,7 @@ import ViewerDashboard from './pages/dashboard/ViewerDashboard';
 import ChecklistPage from './pages/ChecklistPage';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
+import Chatbot from './pages/Chatbot';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
+            <Route path="/chatbot" element={<Chatbot />} />
           </Route>
 
           <Route path="/dashboard" element={<DashboardLayout />}>
