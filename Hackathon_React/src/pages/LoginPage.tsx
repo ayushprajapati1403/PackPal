@@ -25,15 +25,14 @@ export default function LoginPage() {
       if (response.data.token) {
         // Store user data in localStorage (not the token)
         localStorage.setItem('user', JSON.stringify(response.data.user));
+
         toast.success('Login successful!');
 
         // Navigate based on user role
-        const userRole = response.data.user?.role || 'user';
-        if (userRole === 'admin') {
-          navigate('/dashboard/admin');
-        } else {
-          navigate('/dashboard/member');
-        }
+        // const userRole = response.data.user?.role || 'user';
+
+        navigate('/dashboard/admin');
+
       }
     } catch (error) {
       if (error instanceof AxiosError) {

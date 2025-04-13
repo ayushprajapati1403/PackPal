@@ -1,10 +1,11 @@
 import { Router, Request, Response } from "express";
 import { CommentSchema } from "../types";
 import client from "../../../db/src/index";
+import { authMiddleware } from "../middleware/authMiddleware";
 
 export const commentRoutes = Router();
 
-commentRoutes.post("/add", (async (req: Request, res: Response) => {
+commentRoutes.post("/add", authMiddleware, (async (req: Request, res: Response) => {
 	const parsed = CommentSchema.safeParse(req.body);
 	if (!parsed.success) return res.status(400).json({ message: "Invalid comment data" });
 
@@ -14,7 +15,7 @@ commentRoutes.post("/add", (async (req: Request, res: Response) => {
 }) as any);
 
 
-commentRoutes.get("/item/:itemId", (async (req: Request, res: Response) => {
+commentRoutes.get("/item/:itemId", authMiddleware, (async (req: Request, res: Response) => {
 	const { itemId } = req.params;
 	const comments = await client.comment.findMany({
 		where: { itemId },

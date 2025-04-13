@@ -1,14 +1,34 @@
+// authStore.ts
 import { create } from 'zustand';
-import { User } from '../types';
+import axios from '../utils/axios';
+
+interface User {
+  name: string;
+  email: string;
+}
 
 interface AuthState {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: (user: User) => void;
+  loadUser: () => Promise<void>;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   setUser: (user) => set({ user }),
-  logout: () => set({ user: null }),
+
+  loadUser: async () => {
+    try {
+      const res = await axios.get('/me'); // This should return user from session cookie
+      set({ user: res.data.user });
+    } catch (err) {
+      console.log(err);
+      set({ user: null });
+    }
+  },
+
+  logout: () => {
+    set({ user: null });
+  },
 }));

@@ -2,10 +2,10 @@
 import { Router, Request, Response } from "express";
 import { NotificationSchema } from "../types";
 import client from "../../../db/src/index";
-
+import { authMiddleware } from "../middleware/authMiddleware";
 export const notificationRoutes = Router();
 
-notificationRoutes.post("/send", (async (req: Request, res: Response) => {
+notificationRoutes.post("/send", authMiddleware, (async (req: Request, res: Response) => {
 	const parsed = NotificationSchema.safeParse(req.body);
 	if (!parsed.success) return res.status(400).json({ message: "Invalid notification data" });
 
@@ -15,7 +15,7 @@ notificationRoutes.post("/send", (async (req: Request, res: Response) => {
 }) as any);
 
 
-notificationRoutes.get("/user/:userId", (async (req: Request, res: Response) => {
+notificationRoutes.get("/user/:userId", authMiddleware, (async (req: Request, res: Response) => {
 	const { userId } = req.params;
 	const notifications = await client.notification.findMany({ where: { userId } });
 	res.json({ notifications });

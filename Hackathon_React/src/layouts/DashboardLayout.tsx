@@ -1,37 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-
 import {
+  LayoutDashboard,
   PackageCheck,
-  Home,
   Users,
   Bell,
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  ChevronDown,
+  BarChart2,
+  ShoppingCart,
+  MessageSquare
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import Footer from '../components/Footer';
 import axiosInstance from '../utils/axios';
 
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, loadUser } = useAuthStore();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const init = async () => {
+      await loadUser();
+      setLoading(false);
+    };
+    init();
+  }, []);
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Members', href: '/dashboard/members', icon: Users },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [loading, user]);
+
+  const navItems = [
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/orders', icon: ShoppingCart, label: 'Orders' },
+    { path: '/products', icon: PackageCheck, label: 'Products' },
+    { path: '/customers', icon: Users, label: 'Customers' },
+    { path: '/analytics', icon: BarChart2, label: 'Analytics' },
+    { path: '/messages', icon: MessageSquare, label: 'Messages' },
+    { path: '/settings', icon: Settings, label: 'Settings' },
   ];
-
 
   const handleLogout = async () => {
     try {
       await axiosInstance.post('/logout');
+      logout();
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -39,72 +61,59 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-200 ease-in-out`}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <Link to="/" className="flex items-center space-x-2">
-              <PackageCheck className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-gray-900">PackPal</span>
-            </Link>
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
+    // <div className="min-h-screen bg-slate-50">
+    //   {/* Sidebar */}
+    //   <aside className={`fixed top-0 left-0 h-screen bg-gradient-to-b from-slate-900 to-slate-800 shadow-xl transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
+    //     <div className="flex items-center justify-between p-4 border-b border-slate-700">
+    //       <h1 className={`text-xl font-bold text-white ${!isSidebarOpen && 'hidden'}`}>Admin Pro</h1>
+    //       <button
+    //         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+    //         className="p-2 rounded-lg hover:bg-slate-700 text-white"
+    //       >
+    //         {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+    //       </button>
+    //     </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-1">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${isActive
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
+    //     <nav className="p-4 space-y-1">
+    //       {navItems.map((item) => {
+    //         const Icon = item.icon;
+    //         const isActive = location.pathname === item.path;
+    //         return (
+    //           <Link
+    //             key={item.path}
+    //             to={item.path}
+    //             className={`flex items-center p-3 rounded-lg transition-all ${isActive
+    //               ? 'bg-blue-500 text-white'
+    //               : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+    //               }`}
+    //           >
+    //             <Icon size={20} className="mr-3" />
+    //             <span className={`${!isSidebarOpen && 'hidden'}`}>{item.label}</span>
+    //           </Link>
+    //         );
+    //       })}
+    //     </nav>
 
-          {/* User Profile */}
-          <div className="px-4 py-4 border-t">
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-white font-medium">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
-                </span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    //     <div className="absolute bottom-0 w-full p-4 border-t border-slate-700">
+    //       <button
+    //         onClick={handleLogout}
+    //         className="flex items-center w-full p-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-all"
+    //       >
+    //         <LogOut size={20} className="mr-3" />
+    //         <span className={`${!isSidebarOpen && 'hidden'}`}>Logout</span>
+    //       </button>
+    //     </div>
+    //   </aside>
 
-      {/* Main Content */}
-      <div className={`${isSidebarOpen ? 'ml-64' : 'ml-0'} transition-all duration-200`}>
-        <Outlet />
-        <Footer />
-      </div>
-    </div>
+    //   {/* Main Content */}
+    //   <div className={`${isSidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300`}>
+    //     <Outlet />
+    //   </div>
+    // </div>
+    <>
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </>
   );
 }

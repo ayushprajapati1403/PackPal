@@ -17,7 +17,7 @@ export const SigninSchema = z.object({
 })
 
 export const EventSchema = z.object({
-	creatorId: z.string(),
+	// creatorId: z.string(),
 	description: z.string(),
 	eventName: z.string(),
 	startDate: z.string()
@@ -25,7 +25,7 @@ export const EventSchema = z.object({
 
 
 export const CategorySchema = z.object({
-	name: z.string(),
+	categoryName: z.string(),
 	eventId: z.string()
 })
 
@@ -38,7 +38,8 @@ export const ItemSchema = z.object({
 export const AssignmentSchema = z.object({
 	userId: z.string(),
 	eventId: z.string(),
-	level: z.enum(['Admin', 'Member', 'Viewer'])
+	level: z.enum(['Admin', 'Member', 'Viewer']),
+	categories: z.array(z.string()).optional()
 })
 
 export const CommentSchema = z.object({

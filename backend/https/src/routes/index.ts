@@ -11,6 +11,7 @@ import { itemRoutes } from "./itemsRoutes";
 import { assignmentRoutes } from "./assignmentsRoutes";
 import { commentRoutes } from "./CommentRoutes";
 import { notificationRoutes } from "./notificationRoutes";
+import { userRoutes } from "./userRoutes";
 import { authMiddleware } from '../middleware/authMiddleware';
 
 
@@ -111,15 +112,17 @@ router.post("/signin", async (req, res) => {
 		// Set HTTP-only cookie with the token
 		res.cookie('token', token, {
 			httpOnly: true,
+			secure: false,
+			sameSite: 'lax',
 
-			sameSite: 'strict',
 			maxAge: 24 * 60 * 60 * 1000 // 1 day
 		});
 
 
 		console.log("Token set:", token);
 		res.json({
-			token: token
+			token: token,
+			user: user
 		})
 	}
 	catch (e) {
@@ -129,6 +132,7 @@ router.post("/signin", async (req, res) => {
 
 // Logout route
 router.post('/logout', (req, res) => {
+	console.log("Logging out user, clearing cookie");
 	res.clearCookie('token', {
 		httpOnly: true,
 		sameSite: 'strict'
@@ -136,6 +140,9 @@ router.post('/logout', (req, res) => {
 	res.json({ message: 'Logged out successfully' });
 });
 
+router.get('/me', authMiddleware, (req, res) => {
+	res.json({ user: (req as any).user });
+});
 
 router.use("/events", eventRoutes);
 router.use("/categories", categoryRoutes);
@@ -143,3 +150,4 @@ router.use("/items", itemRoutes);
 router.use("/assignments", assignmentRoutes);
 router.use("/comments", commentRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/users", userRoutes);

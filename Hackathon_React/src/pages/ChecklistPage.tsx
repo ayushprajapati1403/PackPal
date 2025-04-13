@@ -103,7 +103,7 @@ export default function ChecklistPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Checklist {id}</h1>
-      
+
       {/* Add Category Form */}
       <div className="mb-8">
         <div className="flex gap-4">
@@ -128,7 +128,7 @@ export default function ChecklistPage() {
         {categories.map((category) => (
           <div key={category.id} className="border rounded-lg p-4">
             <h2 className="text-xl font-semibold mb-4">{category.name}</h2>
-            
+
             {/* Add Item Form */}
             <div className="mb-4">
               <div className="flex gap-2">

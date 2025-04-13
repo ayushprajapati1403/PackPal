@@ -1,14 +1,16 @@
 import express from "express";
 import cors from "cors";
 import { router } from "./routes/index";
+import cookieParser from "cookie-parser";
 
 const app = express();
+app.use(cookieParser());
 
 // Enable CORS for frontend
 app.use(cors({
 	origin: 'http://localhost:5173', // Vite's default port
 	credentials: true,
-	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 	allowedHeaders: ['Content-Type', 'Authorization']
 }));
 

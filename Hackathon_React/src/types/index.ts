@@ -3,50 +3,40 @@ export type Permission = 'Admin' | 'Member' | 'Viewer';
 
 export interface User {
   id: string;
+  name: string;
   email: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+  updatedAt: string;
   fullname: string;
   username: string;
-  role: Role;
   createdEvents?: Event[];
   assignments?: Assignment[];
   comments?: Comment[];
   notifications?: Notification[];
 }
 
-export interface Event {
-  eventId: string;
-  eventName: string;
+export type Event = {
+  [x: string]: any;
+  id: string;
+  name: string;
   description: string;
-  startDate: string;
-  updatedAt: string;
-  creatorId: string;
-  creator?: User;
-  categories?: Category[];
-  assignments?: Assignment[];
-  notifications?: Notification[];
-}
+  date: string;
+  categories: Category[];
+  members: User[];
+};
 
 export interface Category {
   id: string;
   name: string;
-  event: Event;
-  eventId: string;
-  items?: Item[];
-  Assignment?: Assignment;
-  assignmentId?: string;
+  items: Item[];
 }
 
-export interface Item {
+export type Item = {
   id: string;
   name: string;
-  isPacked: boolean;
-  isDelivered: boolean;
-  category: Category;
-  categoryId: string;
-  assignment?: Assignment;
-  assignmentId?: string;
-  comments?: Comment[];
-}
+  status: 'pending' | 'packed';
+};
 
 export interface Assignment {
   id: string;

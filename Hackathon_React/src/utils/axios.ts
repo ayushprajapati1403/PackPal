@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { createBrowserHistory } from 'history';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:3000/api/v1';
 
 const api = axios.create({
 	baseURL: API_URL,
@@ -18,6 +19,18 @@ api.interceptors.request.use(
 	}
 );
 
+const history = createBrowserHistory();
+
+api.interceptors.response.use(
+	response => response,
+	error => {
+		if (error.response?.status === 401) {
+			// Handle unauthorized
+			history.push('/login'); // or window.location.href = '/login';
+		}
+		return Promise.reject(error);
+	}
+);
 // Add a response interceptor
 api.interceptors.response.use(
 	(response) => response,

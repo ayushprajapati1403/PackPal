@@ -2,35 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { PackageCheck, Users, CheckSquare, Bell, Twitter, Facebook, Instagram, Linkedin, ArrowRight } from 'lucide-react';
 import ScrollToTopLink from '../components/ScrollToTopLink';
-import Footer from '../components/Footer';
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 overflow-x-hidden">
-      {/* Navigation */}
-      <nav className="container mx-auto px-4 sm:px-6 py-4 sticky top-0 bg-white/80 backdrop-blur-sm z-50">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center space-x-2">
-            <PackageCheck className="h-8 w-8 text-primary animate-bounce" />
-            <span className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">PackPal</span>
-          </div>
-          <div className="space-x-4">
-            <Link
-              to="/login"
-              className="text-gray-600 hover:text-primary transition-colors duration-300"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-all duration-300 hover:shadow-lg hover:scale-105"
-            >
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="relative container mx-auto px-4 sm:px-6 py-20 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-blue-50/50 to-primary/10 rounded-3xl -z-10 transform rotate-3 max-w-[90vw] mx-auto"></div>
@@ -160,8 +135,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
