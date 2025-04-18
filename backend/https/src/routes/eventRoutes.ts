@@ -532,17 +532,30 @@ eventRoutes.post("/:eventId/confirm-delivery", authMiddleware, (async (req: Requ
 	const userId = req.user?.id;
 
 	try {
-		// Check if user is admin for this event
-		const assignment = await client.assignment.findFirst({
-			where: {
-				eventId,
-				userId,
-				level: 'Admin'
-			}
+		// First check if the user is the creator of the event
+		const eventCreator = await client.event.findUnique({
+			where: { eventId },
+			select: { creatorId: true }
 		});
 
-		if (!assignment) {
-			return res.status(403).json({ message: "Only admins can confirm delivery" });
+		if (!eventCreator) {
+			return res.status(404).json({ message: "Event not found" });
+		}
+
+		// If user is not the creator, check if they have admin permissions
+		if (eventCreator.creatorId !== userId) {
+			// Check if user is admin for this event
+			const assignment = await client.assignment.findFirst({
+				where: {
+					eventId,
+					userId,
+					level: 'Admin'
+				}
+			});
+
+			if (!assignment) {
+				return res.status(403).json({ message: "Only event owners and admins can confirm delivery" });
+			}
 		}
 
 		// Get all items for this event
@@ -551,7 +564,11 @@ eventRoutes.post("/:eventId/confirm-delivery", authMiddleware, (async (req: Requ
 			include: {
 				categories: {
 					include: {
-						items: true
+						items: {
+							where: {
+								isDelivered: false
+							}
+						}
 					}
 				}
 			}
@@ -615,7 +632,7 @@ eventRoutes.post("/:eventId/confirm-delivery", authMiddleware, (async (req: Requ
 			event: updatedEvent
 		});
 	} catch (error) {
-		console.error(error);
+		console.error("Error confirming delivery:", error);
 		res.status(500).json({ message: "Failed to confirm delivery" });
 	}
 }) as any);

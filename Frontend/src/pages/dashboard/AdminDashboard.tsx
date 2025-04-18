@@ -563,11 +563,11 @@ export default function AdminDashboard() {
 			return;
 		}
 
-		// Temporarily bypass permission check
-		// if (selectedEvent.permission !== 'Admin' && !selectedEvent.isCreator) {
-		//   toast.error("Only admins can confirm delivery");
-		//   return;
-		// }
+		// Check if user has admin permissions
+		if (!isEventAdmin(selectedEvent)) {
+			toast.error("Only admins can confirm delivery");
+			return;
+		}
 
 		try {
 			// Check if all items are packed
@@ -580,54 +580,26 @@ export default function AdminDashboard() {
 				return;
 			}
 
-			// Make a direct API call to update all items to delivered status
 			const response = await axios.post(`${API_URL}/events/${selectedEvent.eventId}/confirm-delivery`, {}, {
 				withCredentials: true
 			});
 
-			// Show success message regardless of the response
-			toast.success("Delivery confirmed successfully!");
+			if (response.data.success) {
+				toast.success("Delivery confirmed successfully!");
 
-			// Update the local state to reflect the changes
-			if (response.data && response.data.event && response.data.event.categories) {
-				setSelectedEvent({
-					...selectedEvent,
-					categories: response.data.event.categories
-				});
+				// Update the local state with the response data
+				if (response.data.event) {
+					setSelectedEvent({
+						...selectedEvent,
+						categories: response.data.event.categories
+					});
+				}
 			} else {
-				// If we don't get the updated data, manually update the isDelivered status
-				const updatedCategories = selectedEvent.categories.map(category => ({
-					...category,
-					items: category.items.map(item => ({
-						...item,
-						isDelivered: true
-					}))
-				}));
-
-				setSelectedEvent({
-					...selectedEvent,
-					categories: updatedCategories
-				});
+				toast.error(response.data.message || "Failed to confirm delivery");
 			}
 		} catch (error) {
-			// Show success message even if there's an error
-			toast.success("Delivery confirmed successfully!");
-
-			// Manually update the isDelivered status in the UI
-			const updatedCategories = selectedEvent.categories.map(category => ({
-				...category,
-				items: category.items.map(item => ({
-					...item,
-					isDelivered: true
-				}))
-			}));
-
-			setSelectedEvent({
-				...selectedEvent,
-				categories: updatedCategories
-			});
-
 			console.error("Error confirming delivery:", error);
+			toast.error("Failed to confirm delivery. Please try again.");
 		}
 	};
 
@@ -665,6 +637,7 @@ export default function AdminDashboard() {
 
 	const isEventAdmin = (event: Event) => {
 		// Check if the current user is an admin for this event
+		// The user must have either 'Owner' permission or 'Admin' permission level
 		return event.permission === 'Owner' || event.permission === 'Admin';
 	};
 
