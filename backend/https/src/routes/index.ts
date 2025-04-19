@@ -141,6 +141,7 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/me', authMiddleware, (req, res) => {
+
 	res.json({ user: (req as any).user });
 });
 

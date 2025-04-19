@@ -25,11 +25,11 @@ const Navbar = () => {
   const handleDashboardClick = () => {
     if (user) {
       // Navigate to the appropriate dashboard based on user role
-      if (user.role === 'owner') {
+      if (user.role === 'Owner') {
         navigate('/dashboard/owner');
-      } else if (user.role === 'admin') {
+      } else if (user.role === 'Admin') {
         navigate('/dashboard/admin');
-      } else if (user.role === 'member') {
+      } else if (user.role === 'Member') {
         navigate('/dashboard/member');
       } else if (user.role === 'viewer') {
         navigate('/dashboard/viewer');

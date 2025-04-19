@@ -2,9 +2,12 @@
 import { create } from 'zustand';
 import axios from '../utils/axios';
 
+
 interface User {
-  name: string;
-  email: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  username?: string;
 }
 
 interface AuthState {
