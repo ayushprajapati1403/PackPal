@@ -1,6 +1,6 @@
 node_modules/
 
-Hackathon_React/.bolt
-Hackathon_React/node_modules
-Hackathon_React/.env
+frontend/.bolt
+frontend/node_modules
+frontend/.env
 backend/node_modules/
