@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Bell, Download, Trash2, Edit2, Check, X, LogOut } from 'lucide-react';
+import { Plus, Users, Bell, Download, Trash2, Edit2, Check, X, } from 'lucide-react';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
-import { User, Event, Category, Item, Permission } from '../../types';
-import axios from 'axios';
+import { User, Event, Category, Item } from '../../types';
+import axios from '../../utils/axios';
 import { useNavigate } from 'react-router-dom';
 
-// API base URL
+
 const API_URL = 'http://localhost:3000/api/v1';
 
-axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
+// axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
 
 export default function AdminDashboard() {
 	const [events, setEvents] = useState<Event[]>([]);
@@ -25,13 +25,13 @@ export default function AdminDashboard() {
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 	const [newCategoryName, setNewCategoryName] = useState('');
 	const [categoryItemInputs, setCategoryItemInputs] = useState<Record<string, string>>({});
-	const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+	// const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 	const [inputValue, setInputValue] = useState("");
 	const [suggestions, setSuggestions] = useState([]);
-	const [showEventModal, setShowEventModal] = useState(false);
+	// const [showEventModal, setShowEventModal] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [currentUser, setCurrentUser] = useState<User | null>(null);
-	const navigate = useNavigate();
+	// const navigate = useNavigate();
 
 	useEffect(() => {
 		fetchEvents();
@@ -88,6 +88,7 @@ export default function AdminDashboard() {
 		}
 	};
 
+
 	const handleCreateEvent = async () => {
 		if (!newEvent.name || !newEvent.date) {
 			toast.error('Please fill in all required fields');
@@ -137,7 +138,7 @@ export default function AdminDashboard() {
 			const userId = userResponse.data.user.id;
 
 			// Create the assignment
-			const assignmentResponse = await axios.post(`${API_URL}/assignments/assign`, {
+			await axios.post(`${API_URL}/assignments/assign`, {
 				userId,
 				eventId: selectedEvent.eventId,
 				level: inviteRole === 'member' ? 'Member' : 'Viewer',
@@ -158,13 +159,9 @@ export default function AdminDashboard() {
 			toast.success(`Invitation sent to ${inviteEmail}`);
 			setInviteEmail('');
 			setSelectedCategories([]);
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error('Error sending invitation:', error);
-			if (axios.isAxiosError(error) && error.response?.status === 404) {
-				toast.error(`User with email ${inviteEmail} is not registered in the system`);
-			} else {
-				toast.error('Failed to send invitation');
-			}
+			toast.error('Failed to send invitation');
 		}
 	};
 
@@ -323,7 +320,7 @@ export default function AdminDashboard() {
 			// PDF Options
 			const opt = {
 				margin: 1,
-				filename: `Event_${selectedEvent.eventName}_${new Date().toISOString().split('T')[0]}_Details.pdf`,
+				filename: `Event_${selectedEvent.name}_${new Date().toISOString().split('T')[0]}_Details.pdf`,
 				image: { type: 'jpeg', quality: 0.98 },
 				html2canvas: { scale: 2 },
 				jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
@@ -334,7 +331,7 @@ export default function AdminDashboard() {
 				// Remove the temporary element after PDF is generated
 				document.body.removeChild(element);
 				toast.success('PDF exported successfully!');
-			}).catch(error => {
+			}).catch((error: unknown) => {
 				console.error('Error generating PDF:', error);
 				toast.error('Failed to generate PDF');
 				// Remove the temporary element in case of error
@@ -625,7 +622,7 @@ export default function AdminDashboard() {
 					...response.data.event,
 					categories: response.data.event.categories || []
 				});
-				setShowEventModal(true);
+				// setShowEventModal(true);
 			}
 		} catch (error) {
 			console.error('Error fetching event details:', error);
