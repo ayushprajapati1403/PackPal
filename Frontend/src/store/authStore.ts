@@ -1,14 +1,7 @@
 // authStore.ts
 import { create } from 'zustand';
 import axios from '../utils/axios';
-
-
-interface User {
-  name?: string;
-  email?: string;
-  role?: string;
-  username?: string;
-}
+import { User } from '../types';
 
 interface AuthState {
   user: User | null;

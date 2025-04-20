@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -17,6 +16,7 @@ import ChecklistPage from './pages/ChecklistPage';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import Chatbot from './pages/Chatbot';
+import NotificationsPage from './pages/notifications/NotificationsPage';
 
 function App() {
   return (
@@ -38,6 +38,7 @@ function App() {
             <Route path="admin" element={<AdminDashboard />} />
             <Route path="member" element={<MemberDashboard />} />
             <Route path="viewer" element={<ViewerDashboard />} />
+            <Route path="notifications" element={<NotificationsPage />} />
           </Route>
 
           <Route path="/checklist/:id" element={<ChecklistPage />} />
