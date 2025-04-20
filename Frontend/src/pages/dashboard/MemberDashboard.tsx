@@ -1,190 +1,316 @@
 import React, { useState, useEffect } from 'react';
 import { CheckSquare, MessageSquare, Bell } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { io } from 'socket.io-client';
-import { Category, Item } from '../../types';
+
+import { Item, Event, Notification } from '../../types';
 import { useAuthStore } from '../../store/authStore';
+import { useNavigate } from 'react-router-dom';
+import axios from '../../utils/axios';
+
+const API_URL = 'http://localhost:3000/api/v1';
 
 export default function MemberDashboard() {
   const { user } = useAuthStore();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [newNote, setNewNote] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // TODO: Fetch categories assigned to the current user
-    // This would be replaced with actual API call
-    const fetchCategories = async () => {
-      // Mock data for now
-      const mockCategories: Category[] = [
-        {
-          id: '1',
-          name: 'Category 1',
-          items: [
-            { id: '1', name: 'Item 1', status: 'pending' as const },
-            { id: '2', name: 'Item 2', status: 'pending' as const },
-          ],
-        },
-      ];
-      setCategories(mockCategories);
-      setSelectedCategory(mockCategories[0]);
-    };
-
-    fetchCategories();
-
-    // Set up real-time socket connection
-    const socket = io('http://localhost:3000'); // Replace with your actual server URL
-
-    socket.on('categoryUpdate', (updatedCategory: Category) => {
-      setCategories(prev => 
-        prev.map(cat => 
-          cat.id === updatedCategory.id ? updatedCategory : cat
-        )
-      );
-      toast.info(`Category "${updatedCategory.name}" has been updated!`);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
+    fetchEvents();
+    fetchUnreadNotifications();
   }, []);
 
-  const handleItemToggle = async (itemId: string) => {
-    if (!selectedCategory) return;
-
-    const updatedItems = selectedCategory.items.map(item => 
-      item.id === itemId 
-        ? { ...item, status: item.status === 'pending' ? 'packed' as const : 'pending' as const }
-        : item
-    );
-
-    const updatedCategory: Category = {
-      ...selectedCategory,
-      items: updatedItems,
-    };
-
-    // TODO: Send update to server
-    setCategories(prev => 
-      prev.map(cat => 
-        cat.id === updatedCategory.id ? updatedCategory : cat
-      )
-    );
-    setSelectedCategory(updatedCategory);
+  const fetchEvents = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/events/my-events`, {
+        withCredentials: true
+      });
+      // Filter to only show events where the user is a member
+      const memberEvents = response.data.events.filter((event: Event) =>
+        event.assignments?.some(assignment =>
+          assignment.userId === user?.id && assignment.level === 'Member'
+        )
+      );
+      setEvents(memberEvents || []);
+    } catch (error) {
+      toast.error('Failed to fetch events');
+      console.error('Error fetching events:', error);
+    }
   };
 
-  const handleAddNote = async (itemId: string) => {
-    if (!selectedCategory || !newNote.trim()) return;
+  const fetchUnreadNotifications = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
 
-    const updatedItems = selectedCategory.items.map(item => 
-      item.id === itemId 
-        ? { ...item, notes: newNote }
-        : item
-    );
+      const userData = JSON.parse(userStr);
+      const response = await axios.get(`/notifications/user/${userData.id}`, {
+        withCredentials: true
+      });
 
-    const updatedCategory: Category = {
-      ...selectedCategory,
-      items: updatedItems,
-    };
+      // Count notifications that haven't been sent (unread)
+      const unreadCount = (response.data.notifications || []).filter(
+        (notification: Notification) => !notification.sent
+      ).length;
 
-    // TODO: Send update to server
-    setCategories(prev => 
-      prev.map(cat => 
-        cat.id === updatedCategory.id ? updatedCategory : cat
-      )
-    );
-    setSelectedCategory(updatedCategory);
-    setNewNote('');
+      setUnreadNotifications(unreadCount);
+    } catch (error) {
+      console.error('Error fetching unread notifications:', error);
+    }
+  };
+
+  const handleEventClick = async (event: Event) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_URL}/events/${event.eventId}`, {
+        withCredentials: true
+      });
+
+      if (response.data.event) {
+        setSelectedEvent({
+          ...response.data.event,
+          categories: response.data.event.categories || []
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+      toast.error('Failed to load event details');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleItemStatus = async (categoryId: string, itemId: string) => {
+    try {
+      const response = await axios.patch(`${API_URL}/items/${itemId}/toggle`, {}, {
+        withCredentials: true
+      });
+
+      if (response.data && response.data.updated) {
+        // Update the local state with the new item status from the response
+        setEvents(prevEvents =>
+          prevEvents.map(event => {
+            if (event.eventId === selectedEvent?.eventId) {
+              return {
+                ...event,
+                categories: event.categories?.map(category => {
+                  if (category.id === categoryId) {
+                    return {
+                      ...category,
+                      items: category.items?.map(item => {
+                        if (item.id === itemId) {
+                          return {
+                            ...item,
+                            isPacked: response.data.updated.isPacked
+                          };
+                        }
+                        return item;
+                      })
+                    };
+                  }
+                  return category;
+                })
+              };
+            }
+            return event;
+          })
+        );
+
+        // Update selectedEvent state
+        if (selectedEvent) {
+          setSelectedEvent({
+            ...selectedEvent,
+            categories: selectedEvent.categories?.map(category => {
+              if (category.id === categoryId) {
+                return {
+                  ...category,
+                  items: category.items?.map(item => {
+                    if (item.id === itemId) {
+                      return {
+                        ...item,
+                        isPacked: response.data.updated.isPacked
+                      };
+                    }
+                    return item;
+                  })
+                };
+              }
+              return category;
+            })
+          });
+        }
+
+        toast.success(`Item marked as ${response.data.updated.isPacked ? 'packed' : 'unpacked'}`);
+      }
+    } catch (error) {
+      console.error('Error toggling item status:', error);
+      toast.error('Failed to update item status');
+    }
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Member Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          <Bell className="h-6 w-6 text-gray-600" />
-          <span className="text-sm text-gray-600">Real-time updates enabled</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Categories Sidebar */}
-        <div className="md:col-span-1 bg-white rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-4">Your Categories</h2>
-          <div className="space-y-2">
-            {categories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category)}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                  selectedCategory?.id === category.id
-                    ? 'bg-primary text-white'
-                    : 'hover:bg-gray-100'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Member Dashboard - Events You're a Member Of</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/dashboard/notifications')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white relative"
+            >
+              <Bell className="w-6 h-6" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadNotifications}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Checklist Items */}
-        <div className="md:col-span-3">
-          {selectedCategory ? (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-6">{selectedCategory.name}</h2>
-              <div className="space-y-4">
-                {selectedCategory.items.map(item => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => handleItemToggle(item.id)}
-                        className={`p-2 rounded-lg ${
-                          item.status === 'packed'
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        <CheckSquare className="h-5 w-5" />
-                      </button>
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                      {item.notes && (
-                        <div className="text-sm text-gray-600">
-                          <MessageSquare className="h-4 w-4 inline-block mr-1" />
-                          {item.notes}
-                        </div>
-                      )}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="Add a note..."
-                          value={newNote}
-                          onChange={(e) => setNewNote(e.target.value)}
-                          className="text-sm px-3 py-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <button
-                          onClick={() => handleAddNote(item.id)}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        {/* Events List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((event) => (
+            <div
+              key={event.eventId}
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleEventClick(event)}
+            >
+              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{event.eventName}</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-2">{event.description}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Date: {new Date(event.startDate).toLocaleDateString()}
+              </p>
+              <div className="flex justify-between items-center mt-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {event.assignments?.length || 0} members
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600">
-              Select a category to view its items
-            </div>
-          )}
+          ))}
         </div>
+
+        {/* Selected Event Details */}
+        {selectedEvent && (
+          <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedEvent.eventName}</h2>
+            </div>
+
+            {/* Event Overview Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Event Overview</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Event Details</h4>
+                  <p className="text-gray-600 dark:text-gray-300 mb-2">
+                    <span className="font-medium">Date:</span> {new Date(selectedEvent.startDate).toLocaleDateString()}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-300 mb-2">
+                    <span className="font-medium">Description:</span> {selectedEvent.description}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    <span className="font-medium">Members:</span> {selectedEvent.assignments?.length || 0}
+                  </p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Your Assigned Categories</h4>
+                  <div className="space-y-2">
+                    {selectedEvent.categories?.map(category => {
+                      // Find the assignment that contains this category
+                      const assignment = selectedEvent.assignments?.find(a =>
+                        a.categories?.some(c => c.id === category.id)
+                      );
+                      const isAssignedToMe = assignment?.userId === user?.id;
+
+                      return (
+                        <div key={category.id} className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-300">{category.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs ${isAssignedToMe
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                              }`}>
+                              {isAssignedToMe ? 'Assigned to You' : 'Not Assigned to You'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Categories and Items */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Your Categories and Items</h3>
+              {isLoading ? (
+                <div className="text-center py-4">Loading categories...</div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedEvent?.categories?.map((category) => {
+                    // Check if this category is assigned to the current user
+                    const isAssignedToMe = selectedEvent.assignments?.some(
+                      assignment =>
+                        assignment.userId === user?.id &&
+                        assignment.categories?.some(c => c.id === category.id)
+                    );
+
+                    if (!isAssignedToMe) return null;
+
+                    return (
+                      <div
+                        key={category.id}
+                        className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{category.name}</h4>
+                        </div>
+
+                        <ul className="space-y-2">
+                          {category.items?.map((item: Item) => (
+                            <li
+                              key={item.id}
+                              className="flex justify-between items-center bg-white dark:bg-gray-600 p-2 rounded"
+                            >
+                              <span className="text-gray-900 dark:text-white font-medium">{item.name}</span>
+                              <div className="flex items-center gap-2">
+                                {/* Show status indicator */}
+                                <div className={`p-1 rounded-full ${item.isPacked
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-gray-200 text-gray-600'
+                                  }`}>
+                                  {item.isPacked ? (
+                                    <CheckSquare className="w-4 h-4" />
+                                  ) : (
+                                    <MessageSquare className="w-4 h-4" />
+                                  )}
+                                </div>
+
+                                {/* Allow members to toggle status */}
+                                <button
+                                  onClick={() => handleToggleItemStatus(category.id, item.id)}
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <CheckSquare className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

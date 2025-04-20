@@ -5,7 +5,9 @@ import {
 	X,
 	ShoppingCart,
 	MessageSquare,
-	Contact
+	Contact,
+	Users,
+	Eye
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
@@ -21,7 +23,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
 	const navItems = [
 		{ path: '/', icon: ShoppingCart, label: 'Home' },
-		{ path: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
+		{ path: '/dashboard/admin', icon: LayoutDashboard, label: 'Admin Dashboard' },
+		{ path: '/dashboard/member', icon: Users, label: 'Member Dashboard' },
+		{ path: '/dashboard/viewer', icon: Eye, label: 'Viewer Dashboard' },
 		// { path: '/products', icon: PackageCheck, label: 'Products' },
 		// { path: '/customers', icon: Users, label: 'Customers' },
 		// { path: '/analytics', icon: BarChart2, label: 'Analytics' },

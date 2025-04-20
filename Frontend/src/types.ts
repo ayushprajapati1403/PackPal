@@ -9,7 +9,7 @@ export interface User {
 export interface Event {
 	id: string;
 	eventId: string;
-	name: string;
+	eventName: string;
 	description: string;
 	date: string;
 	startDate: string;
@@ -49,4 +49,13 @@ export enum Permission {
 	Admin = 'Admin',
 	Member = 'Member',
 	Viewer = 'Viewer'
+}
+
+export interface Notification {
+	id: string;
+	message: string;
+	eventId: string;
+	userId: string;
+	sent: boolean;
+	createdAt: string;
 } 

@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+
+    ports:
+      - 3000:3000
+    environment:
+      - DATABASE_URL=postgresql://postgres:Ayush%401432@db.lswsvdkklclkyyoumhfm.supabase.co:5432/postgres
+
+  frontend:
+    build: ./Frontend
+    ports:
+      - 5173:5173
+    depends_on:
+      - backend
+
+  server:
+    build: ./Frontend/server
+    ports:
+      - 5001:5001
+    depends_on:
+      - backend

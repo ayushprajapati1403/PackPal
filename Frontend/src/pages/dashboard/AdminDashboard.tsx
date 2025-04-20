@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect } from 'react';
-import { Plus, Users, Bell, Download, Trash2, Edit2, Check, X, } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Users, Bell, Download, Trash2, Edit2, Check, X, MoreVertical } from 'lucide-react';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
-import { User, Event, Category, Item } from '../../types';
+import { User, Event, Category, Item, Notification } from '../../types';
 import axios from '../../utils/axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +31,10 @@ export default function AdminDashboard() {
 	// const [showEventModal, setShowEventModal] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [currentUser, setCurrentUser] = useState<User | null>(null);
-	// const navigate = useNavigate();
+	const [unreadNotifications, setUnreadNotifications] = useState(0);
+	const navigate = useNavigate();
+	const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		fetchEvents();
@@ -51,6 +54,21 @@ export default function AdminDashboard() {
 				console.error('Error parsing user data:', error);
 			}
 		}
+		fetchUnreadNotifications();
+	}, []);
+
+	// Close menu when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+				setActiveMenuId(null);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
 	}, []);
 
 	const fetchEvents = async () => {
@@ -58,10 +76,35 @@ export default function AdminDashboard() {
 			const response = await axios.get(`${API_URL}/events/my-events`, {
 				withCredentials: true
 			});
-			setEvents(response.data.events || []);
+			// Filter to only show events where the user is the creator
+			const createdEvents = response.data.events.filter((event: Event) =>
+				event.isCreator === true
+			);
+			setEvents(createdEvents || []);
 		} catch (error) {
 			toast.error('Failed to fetch events');
 			console.error('Error fetching events:', error);
+		}
+	};
+
+	const fetchUnreadNotifications = async () => {
+		try {
+			const userStr = localStorage.getItem('user');
+			if (!userStr) return;
+
+			const userData = JSON.parse(userStr);
+			const response = await axios.get(`/notifications/user/${userData.id}`, {
+				withCredentials: true
+			});
+
+			// Count notifications that haven't been sent (unread)
+			const unreadCount = (response.data.notifications || []).filter(
+				(notification: Notification) => !notification.sent
+			).length;
+
+			setUnreadNotifications(unreadCount);
+		} catch (error) {
+			console.error('Error fetching unread notifications:', error);
 		}
 	};
 
@@ -137,6 +180,18 @@ export default function AdminDashboard() {
 
 			const userId = userResponse.data.user.id;
 
+			// Check if any of the selected categories are already assigned
+			if (inviteRole === 'member') {
+				const alreadyAssignedCategories = selectedEvent.categories
+					.filter(category => selectedCategories.includes(category.id) && category.assignmentId)
+					.map(category => category.name);
+
+				if (alreadyAssignedCategories.length > 0) {
+					toast.error(`The following categories are already assigned: ${alreadyAssignedCategories.join(', ')}`);
+					return;
+				}
+			}
+
 			// Create the assignment
 			await axios.post(`${API_URL}/assignments/assign`, {
 				userId,
@@ -147,11 +202,16 @@ export default function AdminDashboard() {
 				withCredentials: true
 			});
 
-			// Send notification to the user
+			// Make sure we have the event name
+			console.log(selectedEvent);
+			const eventName = selectedEvent.eventName || 'Unknown Event';
+
+			// Send notification to the user with sent status set to true
 			await axios.post(`${API_URL}/notifications/send`, {
-				message: `You have been invited to the event "${selectedEvent.name}" as a ${inviteRole}`,
+				message: `You have been invited to the event "${eventName}" as a ${inviteRole}`,
 				userId,
-				eventId: selectedEvent.eventId
+				eventId: selectedEvent.eventId,
+				sent: true
 			}, {
 				withCredentials: true
 			});
@@ -193,7 +253,7 @@ export default function AdminDashboard() {
 			header.style.paddingBottom = '10px';
 
 			const title = document.createElement('h1');
-			title.textContent = selectedEvent.name;
+			title.textContent = selectedEvent.eventName;
 			title.style.color = '#333';
 			title.style.marginBottom = '10px';
 			title.style.fontSize = '24px';
@@ -320,7 +380,7 @@ export default function AdminDashboard() {
 			// PDF Options
 			const opt = {
 				margin: 1,
-				filename: `Event_${selectedEvent.name}_${new Date().toISOString().split('T')[0]}_Details.pdf`,
+				filename: `Event_${selectedEvent.eventName}_${new Date().toISOString().split('T')[0]}_Details.pdf`,
 				image: { type: 'jpeg', quality: 0.98 },
 				html2canvas: { scale: 2 },
 				jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
@@ -648,26 +708,57 @@ export default function AdminDashboard() {
 		return event.permission === 'Member';
 	};
 
+	const handleDeleteEvent = async (eventId: string) => {
+		if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+			return;
+		}
+
+		try {
+			await axios.delete(`${API_URL}/events/${eventId}`, {
+				withCredentials: true
+			});
+
+			// Remove the event from the state
+			setEvents(events.filter(event => event.eventId !== eventId));
+
+			// If the deleted event was selected, clear the selection
+			if (selectedEvent && selectedEvent.eventId === eventId) {
+				setSelectedEvent(null);
+			}
+
+			toast.success('Event deleted successfully');
+		} catch (error) {
+			console.error('Error deleting event:', error);
+			toast.error('Failed to delete event');
+		}
+	};
+
+	const toggleMenu = (eventId: string, e: React.MouseEvent) => {
+		e.stopPropagation(); // Prevent event card click
+		setActiveMenuId(activeMenuId === eventId ? null : eventId);
+	};
+
 	return (
 		<div className="min-h-screen bg-gray-100 dark:bg-gray-900">
 			<div className="p-6">
 				<div className="flex justify-between items-center mb-8">
 					<div>
-
 						{currentUser && (
-							<h1 className="text-3xl font-bold text-gray-900 dark:text-white">  {currentUser.username || currentUser.name}'s Dashboard</h1>
-
+							<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard - {currentUser.username || currentUser.name}'s Created Events</h1>
 						)}
 					</div>
 					<div className="flex items-center gap-4">
 						<button
-							onClick={() => toast.info('WhatsApp notifications enabled')}
-							className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+							onClick={() => navigate('/dashboard/notifications')}
+							className="flex items-center gap-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white relative"
 						>
-							<Bell className="w-5 h-5" />
-							Enable WhatsApp Notifications
+							<Bell className="w-6 h-6" />
+							{unreadNotifications > 0 && (
+								<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+									{unreadNotifications}
+								</span>
+							)}
 						</button>
-
 					</div>
 				</div>
 
@@ -728,10 +819,40 @@ export default function AdminDashboard() {
 					{events.map((event) => (
 						<div
 							key={event.id}
-							className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+							className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow relative"
 							onClick={() => handleEventClick(event)}
 						>
-							<h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{event.name}</h3>
+							<div className="absolute top-4 right-4">
+								<button
+									onClick={(e) => toggleMenu(event.eventId, e)}
+									className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+								>
+									<MoreVertical className="w-5 h-5" />
+								</button>
+
+								{activeMenuId === event.eventId && (
+									<div
+										ref={menuRef}
+										className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+									>
+										<div className="py-1">
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDeleteEvent(event.eventId);
+													setActiveMenuId(null);
+												}}
+												className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+											>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Delete Event
+											</button>
+										</div>
+									</div>
+								)}
+							</div>
+
+							<h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{event.eventName}</h3>
 							<p className="text-gray-600 dark:text-gray-300 mb-2">{event.description}</p>
 							<p className="text-sm text-gray-500 dark:text-gray-400">
 								Date: {new Date(event.startDate).toLocaleDateString()}
@@ -758,7 +879,7 @@ export default function AdminDashboard() {
 				{selectedEvent && (
 					<div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
 						<div className="flex justify-between items-center mb-6">
-							<h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedEvent.name}</h2>
+							<h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedEvent.eventName}</h2>
 							<div className="flex gap-4">
 								{isEventCreator(selectedEvent) && (
 									<button
@@ -796,6 +917,7 @@ export default function AdminDashboard() {
 											const assignment = selectedEvent.assignments?.find(a =>
 												a.categories?.some(c => c.id === category.id)
 											);
+											console.log(assignment);
 											const assignedUsername = assignment?.user?.username || 'Unassigned';
 
 											return (
