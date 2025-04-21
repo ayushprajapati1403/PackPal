@@ -49,5 +49,8 @@ Issue 5: Multiple users add duplicate items
 (Day Three: 21:00 onwards to 13th April(13:00) ) 
 - Integrating Frontend UI, Backend Database and AI chatbot in this last phase, working with individual member.
 
-
-TLDR; WORK DIVIDED IN 3 PHASES, 2 PHASES ARE FINISHED, WORK ASSIGNED IN SOPHISTICATED PROJECT MANAGEMENT MANNER, ALL 3 PHASES (WITH AI CHATBOT aka Grok API ) READY. INTEGRATION IS DONE, WE REQUEST TO READ THE PRESENTATION AS WELL AS GITHUB REPO for EVALUATION
+Steps to implement in your own system:
+1. Download the code.
+2. Install the parameters of React and Typescript (using npm).
+3. Run in VS Code for better experience.
+4. Great, You're all set!
