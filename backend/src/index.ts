@@ -19,7 +19,7 @@ app.use(express.json());
 
 app.use("/api/v1", router);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT2 || 3000;
 
 // Test database connection before starting the server
 async function startServer() {
