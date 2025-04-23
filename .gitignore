@@ -5,13 +5,8 @@ frontend/node_modules
 frontend/.env
 backend/.env
 backend/node_modules/
-backend/Dockerfile
-backend/.dockerignore
-frontend/Dockerfile
-frontend/.dockerignore
-frontend/server/.dockerignore
+
 frontend/server/node_modules
 frontend/server/.env
-frontend/server/Dockerfile
 docker-compose.yaml
 .docker.ignore
