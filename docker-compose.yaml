@@ -1,20 +1,43 @@
+
+
 services:
   backend:
     build: ./backend
-
     ports:
-      - 3000:3000
+      - "3000:3000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - custom_network
 
   frontend:
     build: ./Frontend
     ports:
-      - 5173:5173
+      - "5173:5173"
     depends_on:
       - backend
+    networks:
+      - custom_network
 
   server:
     build: ./Frontend/server
     ports:
-      - 5001:5001
+      - "5001:5001"
     depends_on:
       - backend
+    env_file:
+      - ./Frontend/server/.env
+    networks:
+      - custom_network
+
+networks:
+  custom_network:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.28.0.0/16"
+        - subnet: "2001:db8:1::/64"
