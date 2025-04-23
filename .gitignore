@@ -9,4 +9,9 @@ backend/Dockerfile
 backend/.dockerignore
 frontend/Dockerfile
 frontend/.dockerignore
+frontend/server/.dockerignore
+frontend/server/node_modules
+frontend/server/.env
+frontend/server/Dockerfile
 docker-compose.yaml
+docker.ignore
