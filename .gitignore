@@ -14,4 +14,4 @@ frontend/server/node_modules
 frontend/server/.env
 frontend/server/Dockerfile
 docker-compose.yaml
-docker.ignore
+.docker.ignore

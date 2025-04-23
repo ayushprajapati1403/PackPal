@@ -4,8 +4,6 @@ services:
 
     ports:
       - 3000:3000
-    environment:
-      - DATABASE_URL=postgresql://postgres:Ayush%401432@db.lswsvdkklclkyyoumhfm.supabase.co:5432/postgres
 
   frontend:
     build: ./Frontend
