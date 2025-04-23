@@ -3,9 +3,10 @@
 frontend/.bolt
 frontend/node_modules
 frontend/.env
+backend/.env
 backend/node_modules/
 backend/Dockerfile
 backend/.dockerignore
 frontend/Dockerfile
 frontend/.dockerignore
-docker-compose.yml
+docker-compose.yaml
